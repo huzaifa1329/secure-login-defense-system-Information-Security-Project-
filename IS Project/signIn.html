@@ -1,0 +1,411 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Sign In</title>
+    <link rel="stylesheet" href="style.css">
+    <style>
+        .attempts-info {
+            background: #ffcccc;
+            color: #cc0000;
+            padding: 10px;
+            border-radius: 5px;
+            margin: 10px 0;
+            display: none;
+            font-size: 14px;
+        }
+        
+        .lock-message {
+            background: #ff9900;
+            color: white;
+            padding: 10px;
+            border-radius: 5px;
+            margin: 10px 0;
+            display: none;
+            font-size: 14px;
+        }
+        
+        .success-message {
+            background: #ccffcc;
+            color: #006600;
+            padding: 10px;
+            border-radius: 5px;
+            margin: 10px 0;
+            display: none;
+            font-size: 14px;
+        }
+        
+        .attempt-counter {
+            background: #e6f3ff;
+            color: #0066cc;
+            padding: 8px;
+            border-radius: 5px;
+            margin: 5px 0;
+            font-size: 13px;
+            text-align: center;
+        }
+        
+        .countdown-timer {
+            background: #ff4757;
+            color: white;
+            padding: 5px 10px;
+            border-radius: 4px;
+            font-weight: bold;
+            margin-left: 5px;
+        }
+    </style>
+</head>
+<body>
+
+<form id="signin-form">
+    <h1>Sign In</h1>
+
+    <div id="attempt-counter" class="attempt-counter" style="display: none;">
+        Failed Attempts: <span id="failed-count">0</span> | Remaining: <span id="remaining-count">5</span>
+        <br>
+        <small id="lock-level" style="display: none;">Lock Level: <span id="lock-level-text">0</span></small>
+    </div>
+
+    <div id="attempts-message" class="attempts-info"></div>
+    <div id="lock-message" class="lock-message">
+        <span id="lock-text">Account Locked</span>
+        <span id="countdown-display" class="countdown-timer" style="display: none;">30s</span>
+    </div>
+    <div id="success-message" class="success-message"></div>
+
+    <label>Email</label>
+    <input id="email" type="email" required>
+
+    <label>Password</label>
+    <input id="password" type="password" required>
+    <p><a href="#">Forgot Password?</a></p>
+    <!-- CAPTCHA --> 
+     <label>Enter CAPTCHA</label> 
+     <div class="captcha-box"> 
+        <span id="captcha-text"></span> 
+        <button type="button" onclick="generateCaptcha()">↻</button> 
+    </div> 
+    <input id="captcha-input" type="text" required>
+
+    <button type="submit" id="submit-btn">Sign In</button>
+    <p>Don't have an account? <a href="signUp.html">Sign Up</a></p>
+</form>
+
+<script>
+let captchaValue = ""; 
+let currentFailedAttempts = 0;
+let lockCountdownInterval = null;
+let currentLockDuration = 0;
+let currentConsecutiveLocks = 0;
+
+function generateCaptcha() { 
+        const chars = "ABCDEFG123456789"; 
+        captchaValue = ""; 
+        for (let i = 0; i < 5; i++) { 
+            captchaValue += chars[Math.floor(Math.random() * chars.length)]; 
+        } 
+        document.getElementById("captcha-text").innerText = captchaValue; 
+    } generateCaptcha();
+// Function to update attempt counter display
+function updateAttemptCounter(failedCount) {
+    const remaining = Math.max(0, 5 - failedCount);
+    console.log("Updating counter - Failed:", failedCount, "Remaining:", remaining);
+    
+    document.getElementById("attempt-counter").style.display = "block";
+    document.getElementById("failed-count").textContent = failedCount;
+    document.getElementById("remaining-count").textContent = remaining;
+    
+    // Show lock level if we have consecutive locks
+    if (currentConsecutiveLocks > 0) {
+        document.getElementById("lock-level").style.display = "block";
+        document.getElementById("lock-level-text").textContent = currentConsecutiveLocks;
+    } else {
+        document.getElementById("lock-level").style.display = "none";
+    }
+}
+
+// Function to start countdown timer
+function startCountdownTimer(seconds) {
+    clearCountdownTimer(); // Clear any existing timer
+    
+    const countdownDisplay = document.getElementById("countdown-display");
+    const submitBtn = document.getElementById("submit-btn");
+    
+    countdownDisplay.style.display = "inline-block";
+    currentLockDuration = seconds;
+    
+    lockCountdownInterval = setInterval(() => {
+        currentLockDuration--;
+        countdownDisplay.textContent = `${currentLockDuration}s`;
+        submitBtn.textContent = `Account Locked (${currentLockDuration}s)`;
+        
+        if (currentLockDuration <= 0) {
+            clearCountdownTimer();
+            unlockAccount();
+        }
+    }, 1000);
+}
+
+// Function to clear countdown timer
+function clearCountdownTimer() {
+    if (lockCountdownInterval) {
+        clearInterval(lockCountdownInterval);
+        lockCountdownInterval = null;
+    }
+}
+
+// Function to unlock account UI
+function unlockAccount() {
+    const submitBtn = document.getElementById("submit-btn");
+    const lockMessage = document.getElementById("lock-message");
+    const countdownDisplay = document.getElementById("countdown-display");
+    
+    submitBtn.disabled = false;
+    submitBtn.textContent = "Sign In";
+    lockMessage.style.display = "none";
+    countdownDisplay.style.display = "none";
+    
+    // Reset attempt counter display
+    currentFailedAttempts = 0;
+    document.getElementById("attempt-counter").style.display = "none";
+    
+    console.log("Account unlocked in UI");
+}
+
+// Function to check account status when email is entered
+async function checkAccountStatus(email) {
+    if (!email) return;
+    
+    try {
+        const res = await fetch(`http://localhost:3000/check-attempts/${encodeURIComponent(email)}`);
+        const data = await res.json();
+        
+        console.log("Account status:", data);
+        
+        if (data.failedAttempts > 0 || data.locked) {
+            currentFailedAttempts = data.failedAttempts || 0;
+            currentConsecutiveLocks = data.consecutiveLocks || 0;
+            updateAttemptCounter(currentFailedAttempts);
+            
+            if (data.locked && data.remainingLockTime > 0) {
+                // Account is currently locked
+                const lockMessage = document.getElementById("lock-message");
+                const lockText = document.getElementById("lock-text");
+                const submitBtn = document.getElementById("submit-btn");
+                
+                lockText.textContent = data.consecutiveLocks > 1 
+                    ? `Account locked for ${data.remainingLockTime} seconds (escalated lock)` 
+                    : `Account locked for ${data.remainingLockTime} seconds`;
+                
+                lockMessage.style.display = "block";
+                submitBtn.disabled = true;
+                submitBtn.textContent = `Account Locked (${data.remainingLockTime}s)`;
+                
+                // Start countdown if we have remaining time
+                if (data.remainingLockTime > 0) {
+                    startCountdownTimer(data.remainingLockTime);
+                }
+            }
+        }
+    } catch (error) {
+        console.error("Error checking account status:", error);
+    }
+}
+
+// Event listener for email blur (when user leaves email field)
+document.getElementById("email").addEventListener("blur", function() {
+    const email = this.value;
+    checkAccountStatus(email);
+});
+
+// Main form submission handler
+document.getElementById("signin-form").addEventListener("submit", async (e) => {
+    e.preventDefault();
+
+    const email = document.getElementById("email").value;
+    const password = document.getElementById("password").value;
+    
+    // Hide previous messages
+    document.getElementById("attempts-message").style.display = "none";
+    document.getElementById("lock-message").style.display = "none";
+    document.getElementById("success-message").style.display = "none";
+
+    const data = {
+        email: email,
+        password: password,
+        captchaValue: captchaValue, 
+        userCaptcha: document.getElementById("captcha-input").value
+    };
+
+    try {
+        console.log("Sending login request for:", email);
+        
+        const res = await fetch("http://localhost:3000/signin", {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify(data)
+        });
+
+        const result = await res.json();
+        console.log("Login response:", result);
+
+        if (result.success) {
+            // Show success message
+            localStorage.setItem("email", data.email);
+            window.location.href = "verifyOtp.html";
+            document.getElementById("success-message").textContent = result.message;
+            document.getElementById("success-message").style.display = "block";
+            
+            // Reset all counters
+            currentFailedAttempts = 0;
+            currentConsecutiveLocks = 0;
+            clearCountdownTimer();
+            
+            document.getElementById("attempt-counter").style.display = "none";
+            document.getElementById("password").value = "";
+            
+            // Enable button if it was disabled
+            const submitBtn = document.getElementById("submit-btn");
+            submitBtn.disabled = false;
+            submitBtn.textContent = "Sign In";
+            
+            // Store email and redirect to dashboard after 1 second
+            localStorage.setItem("email", email);
+            setTimeout(() => {
+                window.location.href = "Home.html";
+            }, 1000);
+            
+        } else {
+            console.log("Login failed. Response:", result);
+            
+            // Update current failed attempts from backend response
+            if (result.failedAttempts !== undefined) {
+                currentFailedAttempts = result.failedAttempts;
+                console.log("Setting failedAttempts to:", currentFailedAttempts);
+            }
+            
+            // Update consecutive locks if available
+            if (result.consecutiveLocks !== undefined) {
+                currentConsecutiveLocks = result.consecutiveLocks;
+            }
+            
+            if (result.locked) {
+                // Account is locked
+                console.log("Account locked. failedAttempts:", currentFailedAttempts, "Consecutive locks:", currentConsecutiveLocks);
+                
+                const lockMessage = document.getElementById("lock-message");
+                const lockText = document.getElementById("lock-text");
+                const submitBtn = document.getElementById("submit-btn");
+                
+                // Update lock text based on consecutive locks
+                if (currentConsecutiveLocks > 1) {
+                    lockText.textContent = result.message || `Account locked for 1 minute (escalated lock)`;
+                } else {
+                    lockText.textContent = result.message || `Account locked for 30 seconds`;
+                }
+                
+                lockMessage.style.display = "block";
+                
+                // Update attempt counter to show 5
+                currentFailedAttempts = Math.max(currentFailedAttempts, 5);
+                updateAttemptCounter(currentFailedAttempts);
+                
+                // Disable the form for the lock duration
+                submitBtn.disabled = true;
+                submitBtn.textContent = "Account Locked";
+                
+                // Clear password field
+                document.getElementById("password").value = "";
+                
+                // Determine lock duration from response or based on consecutive locks
+                let lockDuration = 30; // Default 30 seconds
+                if (result.lockDuration) {
+                    lockDuration = result.lockDuration;
+                } else if (currentConsecutiveLocks > 1) {
+                    lockDuration = 60; // 1 minute for escalated lock
+                }
+                
+                // Start countdown timer
+                startCountdownTimer(lockDuration);
+                
+            } else {
+                // Wrong password but not locked yet
+                document.getElementById("attempts-message").textContent = result.message;
+                document.getElementById("attempts-message").style.display = "block";
+                
+                // Update attempt counter with current failed attempts
+                updateAttemptCounter(currentFailedAttempts);
+                
+                // Clear password field for security
+                document.getElementById("password").value = "";
+                
+                // If attempts left is 0, disable the button temporarily
+                if (result.attemptsLeft === 0) {
+                    const submitBtn = document.getElementById("submit-btn");
+                    submitBtn.disabled = true;
+                    submitBtn.textContent = "Too Many Attempts";
+                    
+                    // Re-enable after 5 seconds (next attempt will trigger lock)
+                    setTimeout(() => {
+                        submitBtn.disabled = false;
+                        submitBtn.textContent = "Sign In";
+                    }, 5000);
+                }
+            }
+        }
+    } catch (error) {
+        console.error("Error:", error);
+        alert("An error occurred. Please try again.");
+    }
+});
+
+// Clear messages when user starts typing
+document.getElementById("email").addEventListener("input", () => {
+    document.getElementById("attempts-message").style.display = "none";
+    // Don't clear lock message if account is locked
+    if (!lockCountdownInterval) {
+        document.getElementById("lock-message").style.display = "none";
+    }
+});
+
+document.getElementById("password").addEventListener("input", () => {
+    document.getElementById("attempts-message").style.display = "none";
+});
+
+// Reset form when page loads
+window.addEventListener("load", () => {
+    document.getElementById("password").value = "";
+    currentFailedAttempts = 0;
+    currentConsecutiveLocks = 0;
+    clearCountdownTimer();
+    
+    // Ensure all messages are hidden on page load
+    document.getElementById("attempt-counter").style.display = "none";
+    document.getElementById("attempts-message").style.display = "none";
+    document.getElementById("lock-message").style.display = "none";
+    document.getElementById("success-message").style.display = "none";
+    
+    // Check if there's a stored email and check its status
+    const storedEmail = localStorage.getItem('email');
+    if (storedEmail) {
+        document.getElementById('email').value = storedEmail;
+        // Don't auto-check on page load to avoid unnecessary requests
+    }
+});
+
+// Clear localStorage when user manually enters a different email
+document.getElementById("email").addEventListener("change", function() {
+    const currentEmail = localStorage.getItem('email');
+    if (currentEmail && currentEmail !== this.value) {
+        localStorage.removeItem('email');
+    }
+});
+
+// Clean up intervals when page unloads
+window.addEventListener("beforeunload", () => {
+    clearCountdownTimer();
+});
+</script>
+</body>
+</html>

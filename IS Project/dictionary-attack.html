@@ -1,0 +1,711 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Dictionary Attack Simulation - Educational</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+        }
+
+        body {
+            background: linear-gradient(135deg, #1a1a2e, #16213e);
+            color: white;
+            min-height: 100vh;
+            padding: 20px;
+        }
+
+        .container {
+            max-width: 1200px;
+            margin: 0 auto;
+            background: rgba(255, 255, 255, 0.05);
+            border-radius: 15px;
+            padding: 30px;
+            backdrop-filter: blur(10px);
+            border: 1px solid rgba(255, 255, 255, 0.1);
+        }
+
+        h1 {
+            text-align: center;
+            color: #00e6e6;
+            margin-bottom: 20px;
+            font-size: 2.5em;
+        }
+
+        .warning {
+            background: #ff9900;
+            color: #333;
+            padding: 15px;
+            border-radius: 8px;
+            margin-bottom: 25px;
+            font-weight: bold;
+            text-align: center;
+            border: 2px solid #ff6600;
+        }
+
+        .panel {
+            background: rgba(255, 255, 255, 0.08);
+            border-radius: 10px;
+            padding: 20px;
+            margin-bottom: 25px;
+            border: 1px solid rgba(255, 255, 255, 0.1);
+        }
+
+        h2 {
+            color: #00e6e6;
+            margin-bottom: 15px;
+            border-bottom: 2px solid #00e6e6;
+            padding-bottom: 8px;
+        }
+
+        .form-group {
+            margin-bottom: 15px;
+        }
+
+        label {
+            display: block;
+            margin-bottom: 5px;
+            color: #cccccc;
+        }
+
+        input, select, textarea {
+            width: 100%;
+            padding: 12px;
+            border-radius: 6px;
+            border: 1px solid #444;
+            background: rgba(255, 255, 255, 0.1);
+            color: white;
+            font-size: 16px;
+        }
+
+        textarea {
+            height: 150px;
+            font-family: monospace;
+            resize: vertical;
+        }
+
+        button {
+            background: #00e6e6;
+            color: #000;
+            border: none;
+            padding: 15px 30px;
+            border-radius: 6px;
+            font-size: 16px;
+            font-weight: bold;
+            cursor: pointer;
+            transition: all 0.3s;
+            margin-right: 10px;
+            margin-bottom: 10px;
+        }
+
+        button:hover {
+            background: #00cccc;
+            transform: translateY(-2px);
+        }
+
+        button.stop {
+            background: #ff4757;
+            color: white;
+        }
+
+        button.stop:hover {
+            background: #ff2e43;
+        }
+
+        .stats {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+            gap: 15px;
+            margin-bottom: 25px;
+        }
+
+        .stat-box {
+            background: rgba(0, 230, 230, 0.1);
+            border: 1px solid #00e6e6;
+            border-radius: 8px;
+            padding: 15px;
+            text-align: center;
+        }
+
+        .stat-value {
+            font-size: 28px;
+            font-weight: bold;
+            color: #00e6e6;
+        }
+
+        .stat-label {
+            font-size: 14px;
+            color: #cccccc;
+        }
+
+        .results {
+            margin-top: 25px;
+        }
+
+        .result-item {
+            background: rgba(255, 255, 255, 0.05);
+            border-radius: 6px;
+            padding: 12px;
+            margin-bottom: 10px;
+            border-left: 4px solid #444;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+
+        .result-item.success {
+            border-left-color: #2ecc71;
+            background: rgba(46, 204, 113, 0.1);
+        }
+
+        .result-item.failed {
+            border-left-color: #e74c3c;
+        }
+
+        .password-tried {
+            font-family: monospace;
+            font-weight: bold;
+        }
+
+        .status {
+            padding: 4px 12px;
+            border-radius: 20px;
+            font-size: 12px;
+            font-weight: bold;
+        }
+
+        .status.failed {
+            background: #e74c3c;
+        }
+
+        .status.success {
+            background: #2ecc71;
+            color: white;
+        }
+
+        .progress-bar {
+            width: 100%;
+            height: 20px;
+            background: rgba(255, 255, 255, 0.1);
+            border-radius: 10px;
+            margin: 20px 0;
+            overflow: hidden;
+        }
+
+        .progress-fill {
+            height: 100%;
+            background: linear-gradient(90deg, #00e6e6, #0099cc);
+            border-radius: 10px;
+            transition: width 0.3s;
+            width: 0%;
+        }
+
+        .controls {
+            display: flex;
+            gap: 10px;
+            flex-wrap: wrap;
+            margin-top: 20px;
+        }
+        
+        .login-link {
+            display: inline-block;
+            background: #2ecc71;
+            color: white;
+            padding: 10px 20px;
+            border-radius: 6px;
+            text-decoration: none;
+            margin-top: 10px;
+            font-weight: bold;
+        }
+        
+        .login-link:hover {
+            background: #27ae60;
+            transform: translateY(-2px);
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>🔐 Dictionary Attack Simulation</h1>
+        
+        <div class="warning">
+            ⚠️ WARNING: This simulation is for EDUCATIONAL PURPOSES ONLY.
+            It demonstrates how dictionary attacks work and how your security measures defend against them.
+            Only test on accounts YOU OWN with PERMISSION.
+        </div>
+
+        <div class="panel">
+            <h2>0. Create Test Account</h2>
+            <div class="form-group">
+                <label>Test Account Email:</label>
+                <input type="email" id="testEmail" placeholder="Enter test email (e.g., test@example.com)" value="test@example.com">
+            </div>
+            <div class="form-group">
+                <label>Test Account Password:</label>
+                <input type="password" id="testPassword" placeholder="Enter test password (should be in dictionary for testing)" value="password123">
+            </div>
+            <div class="form-group">
+                <label>Username:</label>
+                <input type="text" id="testUsername" placeholder="Enter username" value="testuser">
+            </div>
+            <button onclick="createTestAccount()">Create Test Account</button>
+            <button onclick="goToSignIn()" class="login-link" style="margin-left: 10px;">Go to Sign In Page</button>
+            <div id="testAccountResult" style="margin-top: 10px;"></div>
+        </div>
+
+        <div class="panel">
+            <h2>1. Attack Configuration</h2>
+            <div class="form-group">
+                <label>Target Account Email:</label>
+                <input type="email" id="targetEmail" placeholder="Enter account to attack" value="test@example.com">
+            </div>
+            <div class="form-group">
+                <label>Dictionary Words (one per line):</label>
+                <textarea id="dictionary">password
+123456
+password123
+admin
+letmein
+welcome
+12345678
+qwerty
+123
+noor1329
+12345
+123456789
+test
+test123
+hello
+hello123
+taha
+123fg
+7654ty
+123456
+taha34
+university
+student
+login
+secure
+abc123
+monkey
+dragon
+sunshine
+master
+football
+mustang
+superman
+batman
+trustno1</textarea>
+            </div>
+        </div>
+
+        <div class="panel">
+            <h2>2. Attack Simulation</h2>
+            <div class="stats">
+                <div class="stat-box">
+                    <div class="stat-value" id="attemptCount">0</div>
+                    <div class="stat-label">Attempts Made</div>
+                </div>
+                <div class="stat-box">
+                    <div class="stat-value" id="successCount">0</div>
+                    <div class="stat-label">Successful</div>
+                </div>
+                <div class="stat-box">
+                    <div class="stat-value" id="failedCount">0</div>
+                    <div class="stat-label">Failed</div>
+                </div>
+            </div>
+
+            <div class="progress-bar">
+                <div class="progress-fill" id="progressFill"></div>
+            </div>
+
+            <div class="controls">
+                <button onclick="startAttack()">▶ Start Attack</button>
+                <button onclick="stopAttack()" class="stop">⏹ Stop Attack</button>
+                <button onclick="slowAttack()">🐌 Slow Attack (1 sec delay)</button>
+                <button onclick="fastAttack()">⚡ Fast Attack (no delay)</button>
+                <button onclick="resetAttack()">🔄 Reset</button>
+            </div>
+        </div>
+
+        <div class="panel">
+            <h2>3. Results & Analysis</h2>
+            <div id="results" class="results">
+                <!-- Results will appear here -->
+            </div>
+        </div>
+
+        <div class="panel">
+            <h2>4. Security Analysis</h2>
+            <div id="analysis">
+                <p>Status: Ready to start simulation...</p>
+                <p>Your security measures:</p>
+                <ul>
+                    <li>❌ No account lockout mechanism</li>
+                    <li>❌ No password complexity requirements</li>
+                    <li>❌ No CAPTCHA protection</li>
+                    <li>❌ No IP-based rate limiting</li>
+                </ul>
+                <p><strong>This system is vulnerable to dictionary attacks!</strong></p>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        let isAttacking = false;
+        let currentIndex = 0;
+        let passwords = [];
+        let attackStats = {
+            attempts: 0,
+            success: 0,
+            failed: 0
+        };
+
+        // Create test account
+        async function createTestAccount() {
+            const username = document.getElementById('testUsername').value;
+            const email = document.getElementById('testEmail').value;
+            const password = document.getElementById('testPassword').value;
+
+            if (!username || !email || !password) {
+                showTestResult('Please fill all fields', 'error');
+                return;
+            }
+
+            try {
+                showTestResult('Creating test account...', 'info');
+                
+                const response = await fetch('http://localhost:3000/signup', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({
+                        username: username,
+                        email: email,
+                        password: password
+                    })
+                });
+
+                const result = await response.json();
+
+                if (result.success) {
+                    showTestResult('✅ Test account created successfully! You can now test the dictionary attack.', 'success');
+                    
+                    // Auto-fill the target email for attack
+                    document.getElementById('targetEmail').value = email;
+                    
+                    // Add the test password to dictionary if not already there
+                    const dictionaryTextarea = document.getElementById('dictionary');
+                    let dictionaryWords = dictionaryTextarea.value.split('\n');
+                    
+                    if (!dictionaryWords.includes(password)) {
+                        dictionaryWords.unshift(password); // Add to beginning
+                        dictionaryTextarea.value = dictionaryWords.join('\n');
+                    }
+                    
+                } else {
+                    showTestResult('Failed to create test account: ' + result.message, 'error');
+                }
+            } catch (error) {
+                showTestResult('Error creating test account: ' + error.message, 'error');
+            }
+        }
+
+        function showTestResult(message, type) {
+            const resultDiv = document.getElementById('testAccountResult');
+            resultDiv.innerHTML = `
+                <div style="padding: 10px; border-radius: 6px; background: ${type === 'success' ? '#2ecc71' : type === 'error' ? '#e74c3c' : '#3498db'}; color: white;">
+                    ${message}
+                </div>
+            `;
+        }
+
+        function goToSignIn() {
+            window.location.href = 'signIn.html';
+        }
+
+        // Start dictionary attack
+        async function startAttack() {
+            if (isAttacking) return;
+            
+            const email = document.getElementById('targetEmail').value;
+            const dictionaryText = document.getElementById('dictionary').value;
+            
+            if (!email) {
+                alert('Please enter target email');
+                return;
+            }
+            
+            passwords = dictionaryText.split('\n').filter(p => p.trim() !== '');
+            
+            if (passwords.length === 0) {
+                alert('Please add passwords to dictionary');
+                return;
+            }
+            
+            isAttacking = true;
+            currentIndex = 0;
+            attackStats = { attempts: 0, success: 0, failed: 0 };
+            updateStats();
+            
+            document.getElementById('results').innerHTML = '';
+            addResult('Starting dictionary attack simulation...', 'info');
+            
+            await performAttack(email, 500); // 500ms delay between attempts
+        }
+
+        async function performAttack(email, delay = 500) {
+            const totalPasswords = passwords.length;
+            
+            for (let i = currentIndex; i < totalPasswords; i++) {
+                if (!isAttacking) break;
+                
+                currentIndex = i;
+                const password = passwords[i];
+                
+                // Update progress
+                const progress = ((i + 1) / totalPasswords) * 100;
+                document.getElementById('progressFill').style.width = progress + '%';
+                
+                // Try login
+                await tryPassword(email, password, i + 1);
+                
+                // Delay between attempts
+                if (delay > 0) {
+                    await new Promise(resolve => setTimeout(resolve, delay));
+                }
+            }
+            
+            if (currentIndex >= totalPasswords - 1) {
+                addResult('Dictionary attack simulation completed!', 'info');
+                isAttacking = false;
+                
+                // Show analysis
+                showAnalysis();
+            }
+        }
+
+        async function tryPassword(email, password, attemptNumber) {
+            attackStats.attempts++;
+            
+            try {
+                const response = await fetch('http://localhost:3000/signin', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ email: email, password: password })
+                });
+
+                const result = await response.json();
+                
+                if (result.success) {
+                    attackStats.success++;
+                    addResult(`✅ ATTEMPT ${attemptNumber}: Password FOUND! "${password}"`, 'success');
+                    
+                    // Update analysis
+                    document.getElementById('analysis').innerHTML = `
+                        <div style="background: #e74c3c; color: white; padding: 15px; border-radius: 8px;">
+                            <h3>⚠️ SECURITY BREACH DETECTED!</h3>
+                            <p>Password cracked: <strong>${password}</strong></p>
+                            <p>Attempts needed: <strong>${attemptNumber}</strong></p>
+                            <p>This demonstrates that weak passwords are vulnerable to dictionary attacks.</p>
+                            <p><strong>Recommendations:</strong></p>
+                            <ul>
+                                <li>Use strong, unique passwords</li>
+                                <li>Implement account lockout after failed attempts</li>
+                                <li>Add CAPTCHA protection</li>
+                                <li>Enable two-factor authentication</li>
+                            </ul>
+                        </div>
+                    `;
+                    
+                    stopAttack();
+                } else {
+                    attackStats.failed++;
+                    addResult(`❌ ATTEMPT ${attemptNumber}: Failed with "${password}" - ${result.message}`, 'failed');
+                }
+                
+                updateStats();
+                
+            } catch (error) {
+                addResult(`⚠️ ATTEMPT ${attemptNumber}: Error with "${password}" - ${error.message}`, 'failed');
+                attackStats.failed++;
+                updateStats();
+            }
+        }
+
+        function addResult(message, type) {
+            const resultsDiv = document.getElementById('results');
+            const resultItem = document.createElement('div');
+            resultItem.className = `result-item ${type}`;
+            
+            const timestamp = new Date().toLocaleTimeString();
+            resultItem.innerHTML = `
+                <div>
+                    <span style="color: #999; font-size: 12px;">[${timestamp}]</span>
+                    <span style="margin-left: 10px;">${message}</span>
+                </div>
+                <span class="status ${type}">${type.toUpperCase()}</span>
+            `;
+            
+            resultsDiv.prepend(resultItem);
+            
+            // Auto-scroll
+            resultsDiv.scrollTop = 0;
+        }
+
+        function updateStats() {
+            document.getElementById('attemptCount').textContent = attackStats.attempts;
+            document.getElementById('successCount').textContent = attackStats.success;
+            document.getElementById('failedCount').textContent = attackStats.failed;
+        }
+
+        function resetAttack() {
+            isAttacking = false;
+            currentIndex = 0;
+            attackStats = { attempts: 0, success: 0, failed: 0 };
+            updateStats();
+            document.getElementById('progressFill').style.width = '0%';
+            document.getElementById('results').innerHTML = '';
+            document.getElementById('analysis').innerHTML = `
+                <p>Status: Ready to start simulation...</p>
+                <p>Your security measures:</p>
+                <ul>
+                    <li>❌ No account lockout mechanism</li>
+                    <li>❌ No password complexity requirements</li>
+                    <li>❌ No CAPTCHA protection</li>
+                    <li>❌ No IP-based rate limiting</li>
+                </ul>
+                <p><strong>This system is vulnerable to dictionary attacks!</strong></p>
+            `;
+        }
+
+        function stopAttack() {
+            isAttacking = false;
+            addResult('Attack simulation stopped by user', 'info');
+        }
+
+        function slowAttack() {
+            if (isAttacking) {
+                stopAttack();
+                setTimeout(() => {
+                    performAttack(document.getElementById('targetEmail').value, 1000);
+                }, 100);
+            }
+        }
+
+        function fastAttack() {
+            if (isAttacking) {
+                stopAttack();
+                setTimeout(() => {
+                    performAttack(document.getElementById('targetEmail').value, 0);
+                }, 100);
+            }
+        }
+
+        function showAnalysis() {
+            const totalAttempts = attackStats.attempts;
+            const successRate = totalAttempts > 0 ? (attackStats.success / totalAttempts * 100).toFixed(2) : 0;
+            
+            let analysisHTML = `
+                <h3>Attack Simulation Complete!</h3>
+                <div class="stats">
+                    <div class="stat-box">
+                        <div class="stat-value">${totalAttempts}</div>
+                        <div class="stat-label">Total Attempts</div>
+                    </div>
+                    <div class="stat-box">
+                        <div class="stat-value">${successRate}%</div>
+                        <div class="stat-label">Success Rate</div>
+                    </div>
+                    <div class="stat-box">
+                        <div class="stat-value">${passwords.length}</div>
+                        <div class="stat-label">Dictionary Size</div>
+                    </div>
+                </div>
+                
+                <h4>Security Assessment:</h4>
+            `;
+            
+            if (attackStats.success > 0) {
+                analysisHTML += `
+                    <div style="background: #e74c3c; color: white; padding: 15px; border-radius: 8px; margin: 15px 0;">
+                        <strong>🔓 SECURITY VULNERABILITY DETECTED!</strong>
+                        <p>The dictionary attack successfully cracked the password in ${attackStats.attempts} attempts.</p>
+                        <p><strong>Critical Security Recommendations:</strong></p>
+                        <ol>
+                            <li>Implement account lockout after 5 failed attempts</li>
+                            <li>Add CAPTCHA protection for multiple login attempts</li>
+                            <li>Enforce strong password policies (12+ characters, mixed case, numbers, symbols)</li>
+                            <li>Implement rate limiting per IP address</li>
+                            <li>Monitor for brute force attack patterns</li>
+                        </ol>
+                    </div>
+                `;
+            } else {
+                analysisHTML += `
+                    <div style="background: #2ecc71; color: white; padding: 15px; border-radius: 8px; margin: 15px 0;">
+                        <strong>✅ PASSWORD NOT CRACKED!</strong>
+                        <p>The dictionary attack failed to find the correct password.</p>
+                        <p>However, this doesn't mean the system is secure:</p>
+                        <ul>
+                            <li>Attackers could try larger dictionaries</li>
+                            <li>No lockout mechanism means unlimited attempts</li>
+                            <li>Add proper security measures for real protection</li>
+                        </ul>
+                    </div>
+                `;
+            }
+            
+            document.getElementById('analysis').innerHTML = analysisHTML;
+        }
+
+        // Initialize with sample dictionary
+        document.getElementById('dictionary').value = `password
+123456
+password123
+admin
+letmein
+welcome
+12345678
+qwerty
+123
+noor1329
+12345
+123456789
+test
+123fg
+7654ty
+6754ty
+123456
+test123
+hello
+hello123
+taha
+taha34
+university
+student
+login
+secure
+abc123
+monkey
+dragon
+sunshine
+master
+football
+mustang
+superman
+batman
+trustno1`;
+
+        // Pre-fill test account for convenience
+        document.getElementById('testEmail').value = 'test@example.com';
+        document.getElementById('testPassword').value = 'password123';
+        document.getElementById('testUsername').value = 'testuser';
+        document.getElementById('targetEmail').value = 'test@example.com';
+    </script>
+</body>
+</html>
