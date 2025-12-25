@@ -1,0 +1,2 @@
+# secure-login-defense-system-Information-Security-Project-
+A secure authentication system with offensive/defensive cybersecurity demonstrations. Implements password hashing, escalating account lockouts, CAPTCHA, OTP verification, and real-time attack monitoring. Includes educational brute-force &amp; dictionary attack simulations. Built with Node.js, Express, MySQL, and modern frontend using(HTML, CSS and Js).
