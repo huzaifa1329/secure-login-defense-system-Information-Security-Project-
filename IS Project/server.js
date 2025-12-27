@@ -31,8 +31,8 @@ function hashPassword(password) {
 const transporter = nodemailer.createTransport({
     service: "gmail",
     auth: {
-        user: "huzaifaKhanzada665@gmail.com",        // << ENTER YOUR EMAIL
-        pass: "nnjb tnpe nqob dcdv"            // << ENTER APP PASSWORD
+        user: "email.com",        // << ENTER YOUR EMAIL
+        pass: ""            // << ENTER APP PASSWORD
     }
 });
 
@@ -507,4 +507,5 @@ app.post("/verify-otp", (req, res) => {
 
 
 // ---------------- START SERVER ----------------
+
 app.listen(3000, () => console.log("Server running on port 3000"));
